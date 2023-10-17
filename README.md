@@ -13,7 +13,15 @@ public, which could potentially identify short-term investment opportunities.
 ### Modified Proposal
 
 My original proposal was too ambitious in scope and not well-defined, so I have modified it to fit more with the 
-learning objectives of this class and add some finer detail.
+learning objectives of this class and add some finer detail. After feedback from the professor, I have come up with a 
+modified proposal that covers the following to-do list:
+- Write a scraper that pulls search results for a particular stock ticker from Twitter
+- Use an existing NLP tool (such as NLTK Vader) to analyze the scraped data for sentiment
+- Aggregate that data
+- Scrape Analyst data and performance data
+- Chart the results
+
+---
 
 My proposal is to create a program that can scrape tweets based on user-provided parameters including a stock ticker 
 and time period. The scraper will then search twitter using the input params, parse the HTML to pull out the actual 
