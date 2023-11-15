@@ -87,14 +87,18 @@ class TwitterScraper:
                 last_tweet.send_keys(Keys.NULL)
             except ElementNotInteractableException:
                 pass
-            time.sleep(0.5)
-        return tweets
+            time.sleep(0.7)
+        return list(tweets)
+
+    def end_session(self):
+        self._driver.quit()
 
 
 if __name__ == '__main__':
     session = TwitterScraper()
     from_date = datetime.date(2022, 11, 9)
     to_date = datetime.date(2022, 11, 30)
-    session.scrape('msft', from_date, to_date, 50)
+    print(session.scrape('msft', from_date, to_date, 50))
     time.sleep(2)
-    session.scrape('aapl', from_date, to_date, 50)
+    print(session.scrape('aapl', from_date, to_date, 50))
+    session.end_session()
