@@ -9,6 +9,7 @@ bs4 = "*"
 lxml = "*"
 selenium = "*"
 python-dotenv = "*"
+nltk = "*"
 
 [dev-packages]
 
