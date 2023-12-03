@@ -1,15 +1,19 @@
-import datetime
-import sys
-
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
-from twitter_scraper import TwitterScraper
 
 
-def main(session: TwitterScraper):
-    from_date = datetime.date(2022, 11, 15)
-    to_date = datetime.date(2022, 11, 16)
-    n = 200
-    tweets = session.scrape('msft', from_date, to_date, n)
+def main(n: int):
+    tweets = {}
+    with open('data/MSFT.txt', 'r', encoding='utf-8') as f:
+        lines = f.readlines()
+        for line in lines:
+            splt = line.split(':', 1)
+            date = splt[0]
+            tweet = splt[1]
+
+            if date in tweets.keys():
+                tweets[date].append(tweet)
+            else:
+                tweets[date] = [tweet]
 
     for day in tweets.keys():
         sum_neg = 0
@@ -19,7 +23,6 @@ def main(session: TwitterScraper):
         for tweet in tweets[day]:
             sid = SentimentIntensityAnalyzer()
             ss = sid.polarity_scores(tweet)
-            print(ss)
             sum_neg += ss['neg']
             sum_neu += ss['neu']
             sum_pos += ss['pos']
@@ -28,14 +31,9 @@ def main(session: TwitterScraper):
         avg_neu = sum_neu / n
         avg_pos = sum_pos / n
 
-        print(f'{day}: {avg_neg}, {avg_neu}, {avg_pos}, {avg_neg + avg_neu + avg_pos}')
+        # print(f'{day}: {avg_neg}, {avg_neu}, {avg_pos}, {avg_neg + avg_neu + avg_pos}')
+        print(f'{day}: {avg_pos / avg_neg}')
 
 
 if __name__ == '__main__':
-    session = TwitterScraper()
-    try:
-        main(session)
-        session.end_session()
-    except KeyboardInterrupt:
-        session.end_session()
-        sys.exit(-1)
+    main(100)

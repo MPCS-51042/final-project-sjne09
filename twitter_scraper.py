@@ -6,7 +6,6 @@ import sys
 from dotenv import load_dotenv
 from random import uniform
 from selenium import webdriver
-from selenium.common.exceptions import StaleElementReferenceException
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -14,21 +13,35 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 
 class TwitterScraper:
+    """
+    Scrape tweets from Twitter search. Specifically tailored to searching
+    for tweets including cashtags for stock tickers.
+    """
     def __init__(self):
         options = webdriver.FirefoxOptions()
         options.add_argument('--no-sandbox')
-        options.add_argument('--headless')
+        # options.add_argument('--headless')
         options.add_argument('--disable-dev-shm-usage')
         options.add_argument('--disable-blink-features=AutomationControlled')
         options.add_argument('--height=1500')
         options.add_argument('--disable-gpu')
 
         self._driver = webdriver.Firefox(options=options)
-        self._wait = WebDriverWait(self._driver, timeout=30)
-        self.__open_session()
+        self._wait = WebDriverWait(self._driver, timeout=10)
+        self._open_session()
 
-    # TODO: new session for each date? might need to just save when successful and go to next date
-    def __open_session(self):
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, tb):
+        self.end_session()
+
+    def _open_session(self):
+        """
+        Opens a twitter session by logging in.
+
+        Requires user credentials in .env file.
+        """
         load_dotenv()
         self._driver.get('https://twitter.com/')
         self._wait.until(EC.presence_of_element_located(
@@ -52,12 +65,26 @@ class TwitterScraper:
         ).click()
 
         time.sleep(uniform(5, 10))
+        if self._driver.current_url != "https://twitter.com/home":
+            print("Login failed.")
 
-    def __search(self,
-                 ticker: str,
-                 date_from: datetime = None,
-                 date_to: datetime = None
-                 ):
+    def _search(self,
+                ticker: str,
+                date_from: datetime = None,
+                date_to: datetime = None
+                ):
+        """
+        Searches Twitter given params.
+
+        Parameters
+        ----------
+        ticker : str
+            The ticker of the stock being searched for
+        date_from : datetime
+            The beginning of the daterange for the search
+        date_to : datetime
+            The end of the daterange for the search
+        """
         url = f'https://twitter.com/search?lang=en&q=%24{ticker}'
         if date_to is not None:
             url = url + f'%20until%3A{date_to.isoformat()}'
@@ -66,71 +93,87 @@ class TwitterScraper:
         url = url + '&src=typed_query&f=live'
         self._driver.get(url)
 
-    def __get_tweet(self) -> str:
+    def _get_tweet(self) -> str:
+        """
+        Gets text for the first tweet on the current webpage.
+
+        Returns
+        -------
+        Tweet text with newlines removed
+        """
         tweet_text = None
+        # get the first tweet on the webpage
+        tweet = self._wait.until(EC.presence_of_element_located(
+            (By.CSS_SELECTOR, 'div[data-testid=cellInnerDiv]')
+        ))
+        # get tweet text if not an ad, else move on
         try:
-            # get the first tweet on the webpage
-            tweet = self._wait.until(EC.presence_of_element_located(
-                (By.CSS_SELECTOR, 'div[data-testid=cellInnerDiv]')
-            ))
-            # get tweet text if not an ad
-            try:
-                tweet_content = tweet.find_element(
-                    By.CSS_SELECTOR,
-                    '[class="css-901oao css-cens5h r-1nao33i r-1qd0xha '
-                    'r-a023e6 r-16dba41 r-rjixqe r-bcqeeo r-bnwqim r-qvutc0"]'
-                )
-                tweet_text = tweet_content.text
-            except NoSuchElementException:
-                pass
-            try:
-                self._driver.execute_script(
-                    'var element = arguments[0]; element.remove();',
-                    tweet
-                )
-            except StaleElementReferenceException:
-                pass
-        except Exception as e:
-            print(e)
-            self.end_session()
-            sys.exit(-1)
+            tweet_text = tweet.find_element(
+                By.CSS_SELECTOR,
+                '[class="css-1rynq56 r-8akbws r-krxsd3 r-dnmrzs r-1udh08x '
+                'r-bcqeeo r-qvutc0 r-1qd0xha r-a023e6 r-rjixqe r-16dba41 r-bnwqim"]'
+            ).text.replace('\n', '')
+        except NoSuchElementException:
+            pass
+        # delete tweet from page html
+        self._driver.execute_script(
+            'var element = arguments[0]; element.remove();',
+            tweet
+        )
         return tweet_text
 
     def scrape(self,
                ticker: str,
                date_from: datetime = None,
                date_to: datetime = None,
-               number: int = 200
-               ) -> dict[list]:
-        tweets = {}
+               number: int = 100
+               ):
+        """
+        Scrapes the specified number of tweets for each date in the
+        provided daterange and saves to a text file.
+
+        Parameters
+        ----------
+        ticker : str
+            The ticker of the stock being scraped
+        date_from : datetime
+            The beginning of the daterange for the scrape
+        date_to : datetime
+            The end of the daterange for the scrape
+        number : int
+            The number of tweets to scrape for each date in range
+        """
+        ticker = ticker.upper()
         delta = datetime.timedelta(days=1)
         current_date = date_to
+
         while current_date >= date_from:
-            self.__search(ticker.upper(), current_date, current_date + delta)
+            self._search(ticker, current_date, current_date + delta)
             time.sleep(uniform(2, 5))
-            tweets[current_date] = set()
-            while len(tweets[current_date]) < number:
-                tweet = self.__get_tweet()
+            tweets = []
+
+            while len(tweets) < number:
+                tweet = self._get_tweet()
                 if tweet is not None:
-                    tweets[current_date].add(tweet)
-                if len(tweets[current_date]) % 5 == 0:
-                    print(f'tweets scraped for {current_date}: {len(tweets[current_date])}')
+                    tweets.append(tweet)
+                if len(tweets) % 5 == 0:
+                    print(f'tweets scraped for {current_date}: {len(tweets)}')
                 time.sleep(1)
-            tweets[current_date] = list(tweets[current_date])
+            with open(f'data/{ticker}.txt', 'a+', encoding='utf-8') as f:
+                for tweet in tweets:
+                    f.write(f'{current_date.strftime("%m/%d/%Y")}: {tweet}\n')
             current_date -= delta
-        return tweets
 
     def end_session(self):
         self._driver.quit()
 
 
 if __name__ == '__main__':
-    session = TwitterScraper()
-    from_date = datetime.date(2022, 11, 30)
-    to_date = datetime.date(2022, 11, 30)
-    try:
-        print(session.scrape('msft', from_date, to_date, 5))
-    except KeyboardInterrupt:
-        session.end_session()
-        sys.exit(-1)
-    session.end_session()
+    with TwitterScraper() as session:
+        from_date = datetime.date(2022, 11, 20)
+        to_date = datetime.date(2023, 10, 20)
+        try:
+            session.scrape('msft', from_date, to_date, 100)
+        except KeyboardInterrupt:
+            session.end_session()
+            sys.exit(-1)

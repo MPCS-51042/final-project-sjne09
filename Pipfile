@@ -5,11 +5,10 @@ name = "pypi"
 
 [packages]
 requests = "*"
-bs4 = "*"
-lxml = "*"
 selenium = "*"
 python-dotenv = "*"
 nltk = "*"
+pandas = "*"
 
 [dev-packages]
 
