@@ -362,4 +362,6 @@ class YfScraper:
 
 
 if __name__ == '__main__':
-    pass
+    yf = YfScraper()
+    df = yf.get_historical_prices('tsla')
+    df.to_csv('data/yfexample.csv', index=False)

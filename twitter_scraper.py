@@ -183,8 +183,8 @@ class TwitterScraper:
 
 if __name__ == '__main__':
     with TwitterScraper(headless=True) as session:
-        from_date = datetime.date(2023, 10, 20)
-        to_date = datetime.date(2023, 10, 20)
+        from_date = datetime.date(2023, 11, 20)
+        to_date = datetime.date(2023, 11, 20)
         try:
             session.scrape('tsla', from_date, to_date, 5)
         except KeyboardInterrupt:

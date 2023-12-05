@@ -31,6 +31,25 @@ pipenv run jupyter notebook
 ```
 The project directory will open in a browser window. Navigate to the notebook to view and run.
 
+To run the example in `twitter_scraper.py`, first put your twitter login details in the `.env` file. Then navigate to 
+the project directory in a terminal window and run:
+```bash
+pipenv shell
+python twitter_scraper.py
+```
+The scraper will run (it will open an automated browser window) and close when finished. It will save a file called 
+"TSLA.txt" in `./data` with the scraped tweets. The scraped tweets in this case are 5 tweets from 11/20/2023 about 
+Tesla's stock.  
+Note: this requires that firefox is installed on the user's computer.
+
+To run the example in `yf_scraper.py`, navigate to the project directory in a terminal window and run:
+```bash
+pipenv shell
+python yf_scraper.py
+```
+The scraper will run and output the data to a file called "yfexample.csv" in `./data` with the scraped data. The data 
+in this case is 1 year of historical price data for Tesla.
+
 ## File Summary
 `Recommendation-Analysis.ipynb` - This is a jupyter notebook containing the data analysis portion of the project. It 
                                   requires the data files available from the google drive link above.
