@@ -1,4 +1,7 @@
+from nltk.downloader import download
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
+
+download('vader_lexicon')
 
 
 def main(n: int):
@@ -31,7 +34,6 @@ def main(n: int):
         avg_neu = sum_neu / n
         avg_pos = sum_pos / n
 
-        # print(f'{day}: {avg_neg}, {avg_neu}, {avg_pos}, {avg_neg + avg_neu + avg_pos}')
         print(f'{day}: {avg_pos / avg_neg}')
 
 

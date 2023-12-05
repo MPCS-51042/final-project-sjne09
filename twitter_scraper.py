@@ -17,14 +17,13 @@ class TwitterScraper:
     Scrape tweets from Twitter search. Specifically tailored to searching
     for tweets including cashtags for stock tickers.
     """
-    def __init__(self):
+    def __init__(self, headless: bool = False):
         options = webdriver.FirefoxOptions()
         options.add_argument('--no-sandbox')
-        # options.add_argument('--headless')
         options.add_argument('--disable-dev-shm-usage')
         options.add_argument('--disable-blink-features=AutomationControlled')
-        options.add_argument('--height=1500')
-        options.add_argument('--disable-gpu')
+        if headless:
+            options.add_argument('--headless')
 
         self._driver = webdriver.Firefox(options=options)
         self._wait = WebDriverWait(self._driver, timeout=10)
@@ -48,6 +47,7 @@ class TwitterScraper:
             (By.XPATH, '//span[text()="Sign in"]')
         )).click()
 
+        # enter username
         time.sleep(uniform(1, 2))
         self._wait.until(EC.presence_of_element_located(
             (By.CSS_SELECTOR, '[autocomplete="username"]')
@@ -56,6 +56,7 @@ class TwitterScraper:
             By.XPATH, '//span[text()="Next"]'
         ).click()
 
+        # enter password
         time.sleep(uniform(1, 2))
         self._wait.until(EC.presence_of_element_located(
             (By.CSS_SELECTOR, '[name="password"]')
@@ -64,9 +65,12 @@ class TwitterScraper:
             By.XPATH, '//span[text()="Log in"]'
         ).click()
 
+        # if not redirected to homepage, login failed
         time.sleep(uniform(5, 10))
         if self._driver.current_url != "https://twitter.com/home":
             print("Login failed.")
+            self.end_session()
+            sys.exit()
 
     def _search(self,
                 ticker: str,
@@ -99,13 +103,16 @@ class TwitterScraper:
 
         Returns
         -------
-        Tweet text with newlines removed
+        str
+            Tweet text with newlines removed
         """
         tweet_text = None
+
         # get the first tweet on the webpage
         tweet = self._wait.until(EC.presence_of_element_located(
             (By.CSS_SELECTOR, 'div[data-testid=cellInnerDiv]')
         ))
+
         # get tweet text if not an ad, else move on
         try:
             tweet_text = tweet.find_element(
@@ -115,6 +122,7 @@ class TwitterScraper:
             ).text.replace('\n', '')
         except NoSuchElementException:
             pass
+
         # delete tweet from page html
         self._driver.execute_script(
             'var element = arguments[0]; element.remove();',
@@ -124,13 +132,13 @@ class TwitterScraper:
 
     def scrape(self,
                ticker: str,
-               date_from: datetime = None,
-               date_to: datetime = None,
+               date_from: datetime = datetime.date.today(),
+               date_to: datetime = datetime.date.today(),
                number: int = 100
                ):
         """
         Scrapes the specified number of tweets for each date in the
-        provided daterange and saves to a text file.
+        provided daterange and saves to a text file located in ./data.
 
         Parameters
         ----------
@@ -147,6 +155,8 @@ class TwitterScraper:
         delta = datetime.timedelta(days=1)
         current_date = date_to
 
+        # for each date in the date range, pull specified number of tweets and write to
+        # text file. Only dates where num tweets = param number will be written to file
         while current_date >= date_from:
             self._search(ticker, current_date, current_date + delta)
             time.sleep(uniform(2, 5))
@@ -165,15 +175,18 @@ class TwitterScraper:
             current_date -= delta
 
     def end_session(self):
+        """
+        Closes the selenium webdriver instance.
+        """
         self._driver.quit()
 
 
 if __name__ == '__main__':
-    with TwitterScraper() as session:
-        from_date = datetime.date(2022, 11, 20)
+    with TwitterScraper(headless=True) as session:
+        from_date = datetime.date(2023, 10, 20)
         to_date = datetime.date(2023, 10, 20)
         try:
-            session.scrape('msft', from_date, to_date, 100)
+            session.scrape('tsla', from_date, to_date, 5)
         except KeyboardInterrupt:
             session.end_session()
-            sys.exit(-1)
+            sys.exit()

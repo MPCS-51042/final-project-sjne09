@@ -4,11 +4,15 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+jupyter = "*"
+nltk = "*"
+numpy = "*"
+pandas = "*"
+plotly = "*"
+python-dotenv = "*"
 requests = "*"
 selenium = "*"
-python-dotenv = "*"
-nltk = "*"
-pandas = "*"
+scikit-learn = "*"
 
 [dev-packages]
 

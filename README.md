@@ -1,7 +1,97 @@
 # Final Project
 Name: Spencer Ellis <br>
-CnetID: sjne <br>
+CNetID: sjne <br>
 Student number: 12411706
+
+## Project Description
+
+This project seeks to answer the question: are equity research analyst ratings (buy/hold/sell) a reliable predictor of 
+short term equity performance? I answer this question through the analysis of ten years of research analyst ratings and 
+subsequent stock price performance for S&P 500 index constituents over periods of 1 week, 1 month, and 3 months after 
+an analyst report was issued. Through the use of logistic regression, I calculate the conditional probabilities of 
+performance relative to the index given a particular analyst rating.
+
+For this project, I scraped equity research analyst rating history and historical price data for all stocks within the 
+S&P 500 index from yahoo finance. The analysis of the data was achieved through the use of scikit-learn's logistic 
+regression model.
+
+## To Run
+
+The project can be run in a pipenv virtual environment.
+
+Data files can be downloaded from: https://drive.google.com/drive/folders/1Jnf9D3L0KMJSvKGlFJ1N89DUKwhIWh7N?usp=sharing  
+Data files should be stored in `./data`.
+
+The analysis for the project is all contained in `Recommendation-Analysis.ipynb`.
+
+To run the notebook, navigate to the project directory in a terminal window and run:
+```bash
+pipenv shell
+pipenv run jupyter notebook
+```
+The project directory will open in a browser window. Navigate to the notebook to view and run.
+
+## File Summary
+`Recommendation-Analysis.ipynb` - This is a jupyter notebook containing the data analysis portion of the project. It 
+                                  requires the data files available from the google drive link above.
+
+`twitter_scraper.py` - This module defines a `TwitterScraper` class that initializes a selenium session in firefox and 
+                       logs into twitter. The `scrape()` function can be called on an instance of the class in order 
+                       to scrape tweets. This module is not actually used in my final analysis, but I have included it 
+                       since I completed it while working on my original proposal.  
+                       **NOTE: this module requires that Firefox is installed in order to run. It also requires user 
+                       twitter credentials to be updated in `.env`
+
+`sentiment_analyzer.py` - This module performs very basic sentiment analysis on tweets scraped using `TwitterScraper`.
+                          It utilizes a pre-trained model (NLTK VADER) to analyze tweets for sentiment. The output 
+                          is simply the ratio of positive sentiment to negative sentiment tweets by date. This is 
+                          included as a proof-of-concept, but was not used in my final analysis.
+
+`yf_scraper.py` - This module defines a `YfScraper` class that initializes a `requests` session. The various functions 
+                  can be called to get data from yahoo finance. The class functions as an unofficial API for yahoo 
+                  finance.
+
+
+## Project Write-up
+
+As you can see in the 'Proposal' section below, this project went through a couple of iterations of detail and 
+development before I even started working on it. However, once I began work on it, it developed further as certain 
+limitations exposed themselves.
+
+I spent a lot of time trying to develop a functioning tweet scraper. The challenge with this part of the project was 
+that twitter has a paid API for pulling such data, and as a result it is quite difficult to actually scrape the site 
+using traditional web scraping methods. Also, Elon has a firm stance against bots on twitter, so that further led to 
+challenges in scraping the site. After a lot of time analyzing the site's html to locate the elements that I needed 
+to extract, it became clear that the standard python requests package wouldn't work for the site given that it is all 
+populated dynamically with javascript. So I went about learning how to use selenium to automate a browser window to 
+load the site, login, perform a search query, and start pulling tweets. This all worked pretty well, although was 
+limited in reliability due to the poor reliability of the twitter website itself.
+
+Once I started trying to pull a large set of tweets though, it was clear that I would have to pivot away from this 
+aspect of my project. It seems there is a limit of around 300 tweets that can be loaded for a user during a particular 
+period of time. As a result, it was going to take an extraordinary amount of time to pull any significant amount of 
+data from the site, which made my plans for sentiment analysis infeasible. At this point, I decided to complete the 
+twitter scraper to have it in working order, put together some sort of function to perform the sentiment analysis, and 
+then move on to the parts of my project that I knew were possible.
+
+The yahoo finance scraper was much simpler to put together than the twitter scraper, given that the yahoo finance API 
+endpoints are publicly available (although access is not condoned by yahoo). I located the API endpoints through use of 
+the inspector in my browser, searching through the html and the network tabs to try to figure out where all the data 
+was being populated from. The analysis stage for both scrapers was interesting because it required a lot of 
+investigative work and use of tools that I was not at all familiar with. Once I located the endpoints, the only real 
+hiccup was trying to figure out how I could get the python requests module to get a cookie and crumb for access to 
+certain API endpoints. 
+
+Since I was able to locate so much interesting data from yahoo finance, I decided to build out extra functions within 
+my scraper so that it could function largely as its own unofficial API - hence why there are a bunch of extra 
+functions within `yf_scraper.py` that aren't actually relevant to my project.
+
+Having had some success with pulling the data I needed from yahoo finance, I finally decided on the analysis that I 
+would carry out for my project. Rather than focusing on sentiment vs. analyst recommendations as I had originally 
+set out to do, I decided to just focus on analyst recommendations vs. stock performance to see if recommendations were 
+a useful predictor of stock performance.
+
+---
 
 ## Proposal
 ### Original Proposal
@@ -16,7 +106,7 @@ My original proposal was too ambitious in scope and not well-defined, so I have 
 learning objectives of this class and add some finer detail. After feedback from the professor, I have come up with a 
 modified proposal that covers the following to-do list:
 - Write a scraper that pulls search results for a particular stock ticker from Twitter
-- Use an existing NLP tool (such as NLTK Vader) to analyze the scraped data for sentiment
+- Use an existing NLP tool (such as NLTK VADER) to analyze the scraped data for sentiment
 - Aggregate that data
 - Scrape Analyst data and performance data
 - Chart the results
